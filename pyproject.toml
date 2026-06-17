@@ -27,6 +27,7 @@ classifiers = [
 dependencies = [
   "pyyaml",
   "psycopg2-binary",
+  "rich",
 ]
 
 [project.optional-dependencies]
