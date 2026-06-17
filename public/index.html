@@ -1,0 +1,577 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="okc — Open Knowledge CLI. Deterministic database introspection to structured markdown knowledge bundles.">
+  <title>okc — Open Knowledge CLI</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&family=Geist+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+
+  <script src="https://unpkg.com/@phosphor-icons/web@2.1.1"></script>
+
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            warm: '#F7F6F3',
+            'warm-light': '#FBFBFA',
+            card: '#FFFFFF',
+            border: '#EAEAEA',
+            body: '#2F3437',
+            muted: '#787774',
+            heading: '#111111',
+            ink: '#111111',
+            'pale-red': '#FDEBEC',
+            'pale-red-text': '#9F2F2D',
+            'pale-blue': '#E1F3FE',
+            'pale-blue-text': '#1F6C9F',
+            'pale-green': '#EDF3EC',
+            'pale-green-text': '#346538',
+            'pale-yellow': '#FBF3DB',
+            'pale-yellow-text': '#956400',
+          },
+          fontFamily: {
+            sans: ['"SF Pro Display"', '"Helvetica Neue"', 'Helvetica', 'Arial', 'sans-serif'],
+            serif: ['"Playfair Display"', 'Georgia', 'serif'],
+            mono: ['"Geist Mono"', '"SF Mono"', '"JetBrains Mono"', 'monospace'],
+          },
+          maxWidth: {
+            '5xl': '64rem',
+            '4xl': '56rem',
+          },
+        }
+      }
+    }
+  </script>
+
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    html { scroll-behavior: smooth; }
+    body { background-color: #F7F6F3; color: #2F3437; font-family: "SF Pro Display", "Helvetica Neue", Helvetica, Arial, sans-serif; line-height: 1.6; -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; }
+
+    .font-serif { font-family: "Playfair Display", Georgia, serif; }
+    .font-mono { font-family: "Geist Mono", "SF Mono", "JetBrains Mono", monospace; }
+
+    .heading-serif { font-family: "Playfair Display", Georgia, serif; letter-spacing: -0.02em; line-height: 1.1; }
+
+    .scroll-entry { opacity: 0; transform: translateY(12px); transition: opacity 600ms cubic-bezier(0.16, 1, 0.3, 1), transform 600ms cubic-bezier(0.16, 1, 0.3, 1); }
+    .scroll-entry.visible { opacity: 1; transform: translateY(0); }
+    .scroll-entry-delayed { opacity: 0; transform: translateY(12px); transition: opacity 600ms cubic-bezier(0.16, 1, 0.3, 1), transform 600ms cubic-bezier(0.16, 1, 0.3, 1); transition-delay: calc(var(--index, 0) * 80ms); }
+    .scroll-entry-delayed.visible { opacity: 1; transform: translateY(0); }
+
+    .card-hover { transition: box-shadow 200ms ease, transform 200ms ease; }
+    .card-hover:hover { box-shadow: 0 2px 8px rgba(0,0,0,0.04); }
+    .card-hover:active { transform: scale(0.98); }
+
+    .btn-primary { background-color: #111111; color: #FFFFFF; border-radius: 4px; border: none; cursor: pointer; transition: background-color 200ms ease, transform 150ms ease; }
+    .btn-primary:hover { background-color: #333333; }
+    .btn-primary:active { transform: scale(0.98); }
+
+    kbd { font-family: "Geist Mono", "SF Mono", "JetBrains Mono", monospace; border: 1px solid #EAEAEA; border-radius: 4px; background-color: #F7F6F3; padding: 2px 6px; font-size: 0.75rem; color: #787774; }
+
+    code, pre { font-family: "Geist Mono", "SF Mono", "JetBrains Mono", monospace; }
+
+    .code-block { background-color: #FFFFFF; border: 1px solid #EAEAEA; border-radius: 8px; padding: 20px 24px; overflow-x: auto; }
+    .code-block code { font-size: 0.8125rem; line-height: 1.7; color: #2F3437; }
+
+    .tag-pill { display: inline-flex; align-items: center; padding: 2px 10px; border-radius: 9999px; font-size: 0.6875rem; font-family: "Geist Mono", "SF Mono", "JetBrains Mono", monospace; text-transform: uppercase; letter-spacing: 0.05em; font-weight: 500; }
+
+    .faux-os-window { border: 1px solid #EAEAEA; border-radius: 8px; background: #FFFFFF; overflow: hidden; }
+    .faux-os-titlebar { display: flex; align-items: center; gap: 8px; padding: 12px 16px; border-bottom: 1px solid #EAEAEA; }
+    .faux-os-dot { width: 10px; height: 10px; border-radius: 50%; background: #D1D1D1; }
+    .faux-os-content { padding: 24px; }
+
+    .accordion-item { border-bottom: 1px solid #EAEAEA; }
+    .accordion-item:last-child { border-bottom: none; }
+    .accordion-trigger { display: flex; justify-content: space-between; align-items: center; width: 100%; padding: 16px 0; background: none; border: none; cursor: pointer; color: #2F3437; font-size: 1rem; text-align: left; }
+    .accordion-trigger:hover { color: #111111; }
+    .accordion-icon { font-size: 1.25rem; color: #787774; transition: transform 200ms ease; line-height: 1; }
+    .accordion-item.open .accordion-icon { transform: rotate(45deg); }
+    .accordion-content { max-height: 0; overflow: hidden; transition: max-height 250ms ease, padding 250ms ease; padding: 0; }
+    .accordion-item.open .accordion-content { max-height: 500px; padding-bottom: 20px; }
+
+    .nav-backdrop { backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); background-color: rgba(247, 246, 243, 0.85); }
+    .nav-link { color: #787774; transition: color 200ms ease; position: relative; }
+    .nav-link:hover { color: #111111; }
+
+    .ambient-blob { position: fixed; top: -20%; left: -10%; width: 80%; height: 80%; border-radius: 50%; pointer-events: none; z-index: 0; background: radial-gradient(circle at 30% 40%, rgba(234, 234, 234, 0.15) 0%, transparent 70%); animation: ambient-drift 25s ease-in-out infinite alternate; opacity: 0.04; }
+    @keyframes ambient-drift { 0% { transform: translate(0, 0) scale(1); } 33% { transform: translate(5%, 3%) scale(1.05); } 66% { transform: translate(-3%, 5%) scale(0.95); } 100% { transform: translate(2%, -2%) scale(1.02); } }
+
+    .section-inner { position: relative; z-index: 1; }
+
+    .mobile-nav { max-height: 0; overflow: hidden; transition: max-height 300ms ease; }
+    .mobile-nav.open { max-height: 300px; }
+
+    .hero-gradient { background: radial-gradient(ellipse at 50% 0%, rgba(225, 243, 254, 0.08) 0%, transparent 60%), radial-gradient(ellipse at 80% 60%, rgba(237, 243, 236, 0.06) 0%, transparent 50%); }
+
+    @media (max-width: 768px) {
+      .desktop-nav { display: none; }
+    }
+    @media (min-width: 769px) {
+      .mobile-nav-trigger { display: none; }
+      .mobile-nav { max-height: none !important; overflow: visible !important; display: none; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Ambient Blob -->
+  <div class="ambient-blob" aria-hidden="true"></div>
+
+  <!-- Navigation -->
+  <nav class="fixed top-0 left-0 right-0 z-50 nav-backdrop border-b border-border">
+    <div class="max-w-5xl mx-auto px-6 flex items-center justify-between h-14">
+      <a href="#" class="font-mono text-sm font-medium tracking-tight text-heading no-underline">okc</a>
+      <div class="desktop-nav flex items-center gap-8">
+        <a href="#features" class="nav-link text-sm no-underline">Features</a>
+        <a href="#quick-start" class="nav-link text-sm no-underline">Quick Start</a>
+        <a href="#docs" class="nav-link text-sm no-underline">Docs</a>
+        <a href="https://github.com/Auran0s/okc" target="_blank" rel="noopener" class="nav-link text-sm no-underline flex items-center gap-1.5">
+          <i class="ph-bold ph-github-logo text-sm"></i>
+          GitHub
+        </a>
+      </div>
+      <button class="mobile-nav-trigger p-2 bg-transparent border-none cursor-pointer text-muted hover:text-heading" onclick="toggleMobileNav()" aria-label="Toggle menu">
+        <i class="ph-bold ph-list text-xl"></i>
+      </button>
+    </div>
+    <div class="mobile-nav border-t border-border" id="mobile-nav">
+      <div class="max-w-5xl mx-auto px-6 py-4 flex flex-col gap-3">
+        <a href="#features" class="nav-link text-sm no-underline" onclick="toggleMobileNav()">Features</a>
+        <a href="#quick-start" class="nav-link text-sm no-underline" onclick="toggleMobileNav()">Quick Start</a>
+        <a href="#docs" class="nav-link text-sm no-underline" onclick="toggleMobileNav()">Docs</a>
+        <a href="https://github.com/Auran0s/okc" target="_blank" rel="noopener" class="nav-link text-sm no-underline flex items-center gap-1.5" onclick="toggleMobileNav()">
+          <i class="ph-bold ph-github-logo text-sm"></i>
+          GitHub
+        </a>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Hero -->
+  <section class="relative pt-32 pb-24 hero-gradient overflow-hidden" id="hero">
+    <div class="section-inner max-w-5xl mx-auto px-6">
+      <div class="scroll-entry max-w-4xl">
+        <span class="tag-pill bg-pale-blue text-pale-blue-text mb-6">v0.1.0 — Alpha</span>
+        <h1 class="heading-serif text-5xl sm:text-6xl lg:text-7xl font-semibold text-heading mb-6 leading-[1.05]">
+          Database schemas<br>
+          <span class="italic font-normal text-muted">as knowledge graphs.</span>
+        </h1>
+        <p class="text-lg sm:text-xl text-muted max-w-2xl mb-10 leading-relaxed">
+          okc reads a database schema and produces an OKF bundle — a directory of cross-linked markdown documents that turn your schema into a navigable knowledge graph.
+        </p>
+      </div>
+      <div class="scroll-entry-delayed" style="--index: 1;">
+        <div class="code-block mb-6">
+          <code>
+            <span class="text-muted"># Introspect any SQLite or PostgreSQL database</span><br>
+            <span class="text-pale-blue-text">$</span> okc introspect sqlite:///path/to/database.db --out ./my-bundle<br><br>
+            <span class="text-muted"># Output:</span><br>
+            my-bundle/<br>
+            ├── <span class="text-pale-green-text">index.md</span><br>
+            ├── tables/<br>
+            │   ├── <span class="text-pale-green-text">index.md</span><br>
+            │   ├── <span class="text-pale-green-text">users.md</span><br>
+            │   └── <span class="text-pale-green-text">orders.md</span><br>
+            └── views/<br>
+                ├── <span class="text-pale-green-text">index.md</span><br>
+                └── <span class="text-pale-green-text">active_orders.md</span>
+          </code>
+        </div>
+        <div class="flex flex-wrap gap-3">
+          <a href="#quick-start" class="btn-primary inline-flex items-center gap-2 px-6 py-3 text-sm font-medium no-underline">
+            Get Started
+            <i class="ph-bold ph-arrow-down text-sm"></i>
+          </a>
+          <a href="https://github.com/Auran0s/okc" target="_blank" rel="noopener" class="inline-flex items-center gap-2 px-6 py-3 text-sm font-medium text-body border border-border rounded-[4px] no-underline hover:bg-white transition-colors duration-200">
+            <i class="ph-bold ph-github-logo text-sm"></i>
+            View on GitHub
+          </a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Features -->
+  <section class="py-24 border-t border-border" id="features">
+    <div class="max-w-5xl mx-auto px-6">
+      <div class="scroll-entry mb-16">
+        <span class="tag-pill bg-pale-red text-pale-red-text mb-4">Capabilities</span>
+        <h2 class="heading-serif text-3xl sm:text-4xl font-semibold text-heading mb-4">
+          What okc does
+        </h2>
+        <p class="text-muted text-lg max-w-2xl">
+          A focused tool with strong opinions about determinism, portability, and zero configuration.
+        </p>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div class="scroll-entry-delayed card-hover bg-card border border-border rounded-[8px] p-8" style="--index: 0;">
+          <div class="w-10 h-10 flex items-center justify-center rounded-[8px] bg-pale-red mb-5">
+            <i class="ph-bold ph-fingerprint text-lg text-pale-red-text"></i>
+          </div>
+          <h3 class="text-lg font-semibold text-heading mb-2">Deterministic Output</h3>
+          <p class="text-muted text-sm leading-relaxed">
+            Same database, same schema — identical bundle every time. No randomness, no drift. Reliable for CI/CD pipelines and version control.
+          </p>
+        </div>
+
+        <div class="scroll-entry-delayed card-hover bg-card border border-border rounded-[8px] p-8" style="--index: 1;">
+          <div class="w-10 h-10 flex items-center justify-center rounded-[8px] bg-pale-blue mb-5">
+            <i class="ph-bold ph-database text-lg text-pale-blue-text"></i>
+          </div>
+          <h3 class="text-lg font-semibold text-heading mb-2">Multi-Backend</h3>
+          <p class="text-muted text-sm leading-relaxed">
+            Introspect SQLite and PostgreSQL databases through a shared <code class="text-sm bg-warm px-1 rounded">Source</code> interface. Add new backends without changing the bundle layer.
+          </p>
+        </div>
+
+        <div class="scroll-entry-delayed card-hover bg-card border border-border rounded-[8px] p-8" style="--index: 2;">
+          <div class="w-10 h-10 flex items-center justify-center rounded-[8px] bg-pale-green mb-5">
+            <i class="ph-bold ph-file-text text-lg text-pale-green-text"></i>
+          </div>
+          <h3 class="text-lg font-semibold text-heading mb-2">Standards-Based</h3>
+          <p class="text-muted text-sm leading-relaxed">
+            Generates valid OKF v0.1 documents with <code class="text-sm bg-warm px-1 rounded">type</code>, <code class="text-sm bg-warm px-1 rounded">title</code>, <code class="text-sm bg-warm px-1 rounded">description</code>, <code class="text-sm bg-warm px-1 rounded">resource</code>, <code class="text-sm bg-warm px-1 rounded">tags</code>, and <code class="text-sm bg-warm px-1 rounded">timestamp</code> frontmatter.
+          </p>
+        </div>
+
+        <div class="scroll-entry-delayed card-hover bg-card border border-border rounded-[8px] p-8" style="--index: 3;">
+          <div class="w-10 h-10 flex items-center justify-center rounded-[8px] bg-pale-yellow mb-5">
+            <i class="ph-bold ph-share-network text-lg text-pale-yellow-text"></i>
+          </div>
+          <h3 class="text-lg font-semibold text-heading mb-2">Cross-Linked</h3>
+          <p class="text-muted text-sm leading-relaxed">
+            Foreign key relationships become navigable markdown links across documents. Every <code class="text-sm bg-warm px-1 rounded">REFERENCES</code> constraint is a hyperlink.
+          </p>
+        </div>
+
+        <div class="scroll-entry-delayed card-hover bg-card border border-border rounded-[8px] p-8" style="--index: 4;">
+          <div class="w-10 h-10 flex items-center justify-center rounded-[8px] bg-pale-red mb-5">
+            <i class="ph-bold ph-tree-structure text-lg text-pale-red-text"></i>
+          </div>
+          <h3 class="text-lg font-semibold text-heading mb-2">Auto-Indexed</h3>
+          <p class="text-muted text-sm leading-relaxed">
+            <code class="text-sm bg-warm px-1 rounded">index.md</code> files are generated for every directory, listing both subdirectories and typed entries. Navigation is built in.
+          </p>
+        </div>
+
+        <div class="scroll-entry-delayed card-hover bg-card border border-border rounded-[8px] p-8" style="--index: 5;">
+          <div class="w-10 h-10 flex items-center justify-center rounded-[8px] bg-pale-blue mb-5">
+            <i class="ph-bold ph-gear-six text-lg text-pale-blue-text"></i>
+          </div>
+          <h3 class="text-lg font-semibold text-heading mb-2">Zero-Config</h3>
+          <p class="text-muted text-sm leading-relaxed">
+            Point it at a database URL and get a bundle. No config files, no YAML schemas to write, no DSL to learn.
+          </p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Quick Start -->
+  <section class="py-24 border-t border-border" id="quick-start">
+    <div class="max-w-5xl mx-auto px-6">
+      <div class="scroll-entry mb-16">
+        <span class="tag-pill bg-pale-green text-pale-green-text mb-4">Getting Started</span>
+        <h2 class="heading-serif text-3xl sm:text-4xl font-semibold text-heading mb-4">
+          Install and run in two commands
+        </h2>
+        <p class="text-muted text-lg max-w-2xl">
+          okc is a Python CLI. Install from source, point it at a database, and get an OKF bundle.
+        </p>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+        <div class="scroll-entry-delayed" style="--index: 0;">
+          <h3 class="text-sm font-semibold text-heading mb-3 tracking-wide uppercase">Installation</h3>
+          <div class="code-block">
+            <code>
+              <span class="text-muted"># Clone and install</span><br>
+              <span class="text-pale-blue-text">$</span> git clone https://github.com/Auran0s/okc<br>
+              <span class="text-pale-blue-text">$</span> cd okc<br>
+              <span class="text-pale-blue-text">$</span> pip install -e .<br><br>
+              <span class="text-muted"># With dev dependencies</span><br>
+              <span class="text-pale-blue-text">$</span> pip install -e ".[dev]"
+            </code>
+          </div>
+        </div>
+
+        <div class="scroll-entry-delayed" style="--index: 1;">
+          <h3 class="text-sm font-semibold text-heading mb-3 tracking-wide uppercase">Usage</h3>
+          <div class="code-block">
+            <code>
+              <span class="text-muted"># Introspect a SQLite database</span><br>
+              <span class="text-pale-blue-text">$</span> okc introspect sqlite:///path/to/database.db --out ./my-bundle<br><br>
+              <span class="text-muted"># Custom output directory</span><br>
+              <span class="text-pale-blue-text">$</span> okc introspect sqlite:///path/to/database.db --out ./docs/database<br><br>
+              <span class="text-muted"># Introspect PostgreSQL</span><br>
+              <span class="text-pale-blue-text">$</span> okc introspect postgresql://user:password@localhost:5432/mydb --out ./pg-bundle<br><br>
+              <span class="text-muted"># JSON output (for CI/CD)</span><br>
+              <span class="text-pale-blue-text">$</span> okc introspect --json sqlite:///path/to/database.db
+            </code>
+          </div>
+        </div>
+      </div>
+
+      <div class="scroll-entry-delayed mt-10" style="--index: 2;">
+        <h3 class="text-sm font-semibold text-heading mb-3 tracking-wide uppercase">CLI Reference</h3>
+        <div class="bg-card border border-border rounded-[8px] overflow-hidden">
+          <table class="w-full text-sm">
+            <thead>
+              <tr class="border-b border-border">
+                <th class="text-left font-mono text-xs font-medium text-muted px-4 py-3">Argument</th>
+                <th class="text-left font-mono text-xs font-medium text-muted px-4 py-3">Required</th>
+                <th class="text-left font-mono text-xs font-medium text-muted px-4 py-3">Default</th>
+                <th class="text-left font-mono text-xs font-medium text-muted px-4 py-3">Description</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr class="border-b border-border">
+                <td class="px-4 py-3"><kbd>url</kbd></td>
+                <td class="px-4 py-3 text-muted">Yes</td>
+                <td class="px-4 py-3 text-muted">—</td>
+                <td class="px-4 py-3 text-muted">Database URL (sqlite:// or postgresql://)</td>
+              </tr>
+              <tr class="border-b border-border">
+                <td class="px-4 py-3"><kbd>--out</kbd></td>
+                <td class="px-4 py-3 text-muted">No</td>
+                <td class="px-4 py-3"><kbd>./okf-bundle</kbd></td>
+                <td class="px-4 py-3 text-muted">Output directory for generated bundle</td>
+              </tr>
+              <tr class="border-b border-border">
+                <td class="px-4 py-3"><kbd>--quiet</kbd></td>
+                <td class="px-4 py-3 text-muted">No</td>
+                <td class="px-4 py-3 text-muted">false</td>
+                <td class="px-4 py-3 text-muted">Suppress stdout (stderr still flows)</td>
+              </tr>
+              <tr class="border-b border-border">
+                <td class="px-4 py-3"><kbd>--json</kbd></td>
+                <td class="px-4 py-3 text-muted">No</td>
+                <td class="px-4 py-3 text-muted">false</td>
+                <td class="px-4 py-3 text-muted">Output structured JSON instead of styled terminal</td>
+              </tr>
+              <tr>
+                <td class="px-4 py-3"><kbd>--version</kbd></td>
+                <td class="px-4 py-3 text-muted">No</td>
+                <td class="px-4 py-3 text-muted">—</td>
+                <td class="px-4 py-3 text-muted">Print version and exit</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Docs: Backends + OKF Format -->
+  <section class="py-24 border-t border-border" id="docs">
+    <div class="max-w-5xl mx-auto px-6">
+      <div class="scroll-entry mb-16">
+        <span class="tag-pill bg-pale-blue text-pale-blue-text mb-4">Documentation</span>
+        <h2 class="heading-serif text-3xl sm:text-4xl font-semibold text-heading mb-4">
+          Backends, format, and architecture
+        </h2>
+        <p class="text-muted text-lg max-w-2xl">
+          Everything you need to understand how okc works and what it produces.
+        </p>
+      </div>
+
+      <!-- Backends -->
+      <div class="scroll-entry mb-16">
+        <h3 class="text-lg font-semibold text-heading mb-6">Supported Backends</h3>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div class="bg-card border border-border rounded-[8px] p-6 card-hover">
+            <div class="flex items-center gap-3 mb-3">
+              <div class="w-8 h-8 flex items-center justify-center rounded-[8px] bg-pale-blue">
+                <i class="ph-bold ph-database text-sm text-pale-blue-text"></i>
+              </div>
+              <span class="font-mono text-sm font-medium text-heading">SQLite</span>
+            </div>
+            <div class="flex items-center gap-2 mb-2">
+              <kbd>sqlite</kbd>
+              <span class="text-xs text-muted">— file-based, zero configuration</span>
+            </div>
+            <div class="code-block text-sm p-3">
+              <code><span class="text-pale-blue-text">sqlite:///path/to/file.db</span></code>
+            </div>
+          </div>
+
+          <div class="bg-card border border-border rounded-[8px] p-6 card-hover">
+            <div class="flex items-center gap-3 mb-3">
+              <div class="w-8 h-8 flex items-center justify-center rounded-[8px] bg-pale-green">
+                <i class="ph-bold ph-plugs-connected text-sm text-pale-green-text"></i>
+              </div>
+              <span class="font-mono text-sm font-medium text-heading">PostgreSQL</span>
+            </div>
+            <div class="flex items-center gap-2 mb-2">
+              <kbd>postgresql</kbd>
+              <span class="text-xs text-muted">— full schema support, multi-schema bundles</span>
+            </div>
+            <div class="code-block text-sm p-3">
+              <code><span class="text-pale-blue-text">postgresql://user:password@host:5432/db</span></code>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- OKF Format -->
+      <div class="scroll-entry">
+        <h3 class="text-lg font-semibold text-heading mb-2">OKF Bundle Format</h3>
+        <p class="text-muted text-sm mb-6 max-w-3xl">
+          Each concept document captures one database object. Documents are cross-linked, indexed, and validated against directory traversal attacks.
+        </p>
+
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-10">
+          <div class="flex flex-col gap-4">
+            <div class="code-block">
+              <code>
+                <span class="text-muted"># Directory structure (single schema)</span><br>
+                my-bundle/<br>
+                ├── <span class="text-pale-green-text">index.md</span><br>
+                ├── tables/<br>
+                │   ├── <span class="text-pale-green-text">index.md</span><br>
+                │   ├── <span class="text-pale-green-text">users.md</span><br>
+                │   ├── <span class="text-pale-green-text">orders.md</span><br>
+                │   └── <span class="text-pale-green-text">products.md</span><br>
+                └── views/<br>
+                    ├── <span class="text-pale-green-text">index.md</span><br>
+                    └── <span class="text-pale-green-text">active_orders.md</span>
+              </code>
+            </div>
+            <div class="code-block">
+              <code>
+                <span class="text-muted"># PostgreSQL multi-schema</span><br>
+                my-bundle/<br>
+                └── tables/<br>
+                    ├── <span class="text-pale-green-text">index.md</span><br>
+                    ├── public/<br>
+                    │   ├── <span class="text-pale-green-text">index.md</span><br>
+                    │   ├── <span class="text-pale-green-text">users.md</span><br>
+                    │   └── <span class="text-pale-green-text">orders.md</span><br>
+                    └── audit/<br>
+                        ├── <span class="text-pale-green-text">index.md</span><br>
+                        └── <span class="text-pale-green-text">log.md</span>
+              </code>
+            </div>
+          </div>
+
+          <div>
+            <div class="code-block mb-4">
+              <code>
+                <span class="text-muted"># YAML frontmatter</span><br>
+                ---<br>
+                <span class="text-pale-blue-text">type</span>: table<br>
+                <span class="text-pale-blue-text">title</span>: users<br>
+                <span class="text-pale-blue-text">description</span>: Registered user accounts<br>
+                <span class="text-pale-blue-text">resource</span>: sqlite:///path/to/database.db<br>
+                <span class="text-pale-blue-text">tags</span>: []<br>
+                <span class="text-pale-blue-text">timestamp</span>: "2026-06-17T12:00:00Z"<br>
+                ---
+              </code>
+            </div>
+
+            <div class="bg-card border border-border rounded-[8px] p-4">
+              <h4 class="text-sm font-semibold text-heading mb-3">Document body sections</h4>
+              <div class="accordion">
+                <div class="accordion-item">
+                  <button class="accordion-trigger text-sm" onclick="toggleAccordion(this)">
+                    <span>Schema — columns table</span>
+                    <span class="accordion-icon">+</span>
+                  </button>
+                  <div class="accordion-content text-xs text-muted leading-relaxed">
+                    Lists every column with name, type, nullable status, default value, and description. Rendered as a markdown table.
+                  </div>
+                </div>
+                <div class="accordion-item">
+                  <button class="accordion-trigger text-sm" onclick="toggleAccordion(this)">
+                    <span>Constraints — PKs, UNIQUE, CHECK</span>
+                    <span class="accordion-icon">+</span>
+                  </button>
+                  <div class="accordion-content text-xs text-muted leading-relaxed">
+                    Primary keys, UNIQUE constraints, CHECK constraints, and EXCLUSION constraints for tables. Each with name, columns, and definition.
+                  </div>
+                </div>
+                <div class="accordion-item">
+                  <button class="accordion-trigger text-sm" onclick="toggleAccordion(this)">
+                    <span>Indexes — columns, uniqueness</span>
+                    <span class="accordion-icon">+</span>
+                  </button>
+                  <div class="accordion-content text-xs text-muted leading-relaxed">
+                    Index name, columns, uniqueness flag, and index method for each table index.
+                  </div>
+                </div>
+                <div class="accordion-item">
+                  <button class="accordion-trigger text-sm" onclick="toggleAccordion(this)">
+                    <span>Relationships — FK cross-links</span>
+                    <span class="accordion-icon">+</span>
+                  </button>
+                  <div class="accordion-content text-xs text-muted leading-relaxed">
+                    Outgoing foreign keys with markdown cross-links to target tables. The Referenced By section shows incoming FKs with links from source tables.
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer class="py-12 border-t border-border">
+    <div class="max-w-5xl mx-auto px-6">
+      <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+        <div class="flex items-center gap-4">
+          <span class="font-mono text-xs font-medium text-heading">okc</span>
+          <span class="text-xs text-muted">Open Knowledge CLI</span>
+        </div>
+        <div class="flex items-center gap-6">
+          <span class="text-xs text-muted">MIT License</span>
+          <a href="https://github.com/Auran0s/okc" target="_blank" rel="noopener" class="text-xs text-muted hover:text-heading no-underline transition-colors duration-200">
+            <i class="ph-bold ph-github-logo text-sm"></i>
+          </a>
+          <span class="text-xs text-muted">&copy; 2026</span>
+        </div>
+      </div>
+    </div>
+  </footer>
+
+  <script>
+    function toggleMobileNav() {
+      document.getElementById('mobile-nav').classList.toggle('open');
+    }
+
+    function toggleAccordion(button) {
+      var item = button.closest('.accordion-item');
+      var isOpen = item.classList.contains('open');
+      document.querySelectorAll('.accordion-item.open').forEach(function(el) {
+        el.classList.remove('open');
+      });
+      if (!isOpen) {
+        item.classList.add('open');
+      }
+    }
+
+    var observer = new IntersectionObserver(function(entries) {
+      entries.forEach(function(entry) {
+        if (entry.isIntersecting) {
+          entry.target.classList.add('visible');
+          observer.unobserve(entry.target);
+        }
+      });
+    }, { threshold: 0.1 });
+
+    document.querySelectorAll('.scroll-entry, .scroll-entry-delayed').forEach(function(el) {
+      observer.observe(el);
+    });
+  </script>
+
+</body>
+</html>
