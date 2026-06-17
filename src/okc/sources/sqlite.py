@@ -1,5 +1,5 @@
+import re
 import sqlite3
-from typing import Optional
 
 from okc.sources.base import (
     ColumnInfo,
@@ -155,5 +155,9 @@ def _parse_sqlite_url(url: str) -> str:
     return url
 
 
+_SEGMENT_RE = re.compile(r"^[a-zA-Z][a-zA-Z0-9_\-.]*$")
+
 def _quote(name: str) -> str:
+    if not _SEGMENT_RE.match(name):
+        raise ValueError(f"Invalid SQLite identifier: {name!r}")
     return f'"{name}"'

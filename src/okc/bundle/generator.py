@@ -98,6 +98,10 @@ def generate_bundle(source: Source, out_dir: str) -> None:
 
         rel_path = concept_id_to_path(ref.id)
         full_path = os.path.join(out_dir, rel_path)
+        real_out = os.path.realpath(out_dir)
+        real_full = os.path.realpath(full_path)
+        if not real_full.startswith(real_out + os.sep) and real_full != real_out:
+            raise ValueError(f"Path traversal detected: {rel_path}")
         os.makedirs(os.path.dirname(full_path), exist_ok=True)
         with open(full_path, "w") as f:
             f.write(doc.serialize())

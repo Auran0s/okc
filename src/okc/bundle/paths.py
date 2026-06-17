@@ -7,6 +7,9 @@ _SPLIT_RE = re.compile(r"[/\\]")
 
 
 def concept_id_to_path(concept_id: tuple[str, ...]) -> str:
+    for seg in concept_id:
+        if not _SEGMENT_RE.match(seg):
+            raise ValueError(f"Invalid concept ID segment: {seg!r}")
     return "/".join(concept_id) + ".md"
 
 
