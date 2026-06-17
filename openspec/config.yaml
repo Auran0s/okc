@@ -1,0 +1,27 @@
+schema: spec-driven
+
+# Project context (optional)
+# This is shown to AI when creating artifacts.
+# Add your tech stack, conventions, style guides, domain knowledge, etc.
+# Example:
+#   context: |
+#     Tech stack: TypeScript, React, Node.js
+#     We use conventional commits
+#     Domain: e-commerce platform
+context: |
+  Tech stack: Python (>=3.11), psycopg2-binary, pyyaml, stdlib sqlite3
+  Build: setuptools via pyproject.toml
+  Project: okc (Open Knowledge CLI) — a Python CLI that reads database schemas and produces Open Knowledge Format (OKF) bundles
+  Subcommand: `okc introspect <url> --out <dir>` reads a SQLite or Postgres database URL, introspects its schema, and writes a conformant OKF bundle directory
+  OKF spec: Google-published v0.1 — markdown files with YAML frontmatter, organized as a directory tree, with cross-links forming a knowledge graph
+  Key patterns: Source ABC (list_concepts, read_schema, read_constraints, read_indexes, read_foreign_keys), bundle OKFDocument dataclass, nested directory structure for Postgres schemas
+
+# Per-artifact rules (optional)
+# Add custom rules for specific artifacts.
+# Example:
+#   rules:
+#     proposal:
+#       - Keep proposals under 500 words
+#       - Always include a "Non-goals" section
+#     tasks:
+#       - Break tasks into chunks of max 2 hours
