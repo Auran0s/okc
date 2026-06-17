@@ -1,0 +1,45 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "okc"
+version = "0.1.0"
+description = "Open Knowledge CLI - deterministic database introspection and OKF bundle generation"
+readme = "README.md"
+license = {text = "MIT"}
+requires-python = ">=3.9"
+authors = [
+  {name = "OKC Contributors"}
+]
+classifiers = [
+  "Development Status :: 3 - Alpha",
+  "Environment :: Console",
+  "Intended Audience :: Developers",
+  "License :: OSI Approved :: MIT License",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3.9",
+  "Programming Language :: Python :: 3.10",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: 3.13",
+]
+dependencies = [
+  "pyyaml",
+  "psycopg2-binary",
+]
+
+[project.optional-dependencies]
+dev = [
+  "pytest",
+]
+
+[project.urls]
+Homepage = "https://github.com/opencode-ai/okc"
+Source = "https://github.com/opencode-ai/okc"
+
+[project.scripts]
+okc = "okc.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
