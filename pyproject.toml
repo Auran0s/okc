@@ -25,8 +25,8 @@ classifiers = [
   "Programming Language :: Python :: 3.13",
 ]
 dependencies = [
-  "pyyaml",
-  "psycopg2-binary",
+  "pyyaml>=6.0",
+  "psycopg2-binary>=2.9",
   "rich",
 ]
 

@@ -40,7 +40,11 @@ def main() -> None:
     )
     introspect_parser.add_argument(
         "url",
-        help="Database URL (e.g. sqlite:///path/to/db, postgresql://user@host/db)",
+        help=(
+            "Database URL (e.g. sqlite:///path/to/db, postgresql://user@host/db). "
+            "For PostgreSQL, use the PGPASSWORD environment variable "
+            "instead of embedding credentials in the URL."
+        ),
     )
     introspect_parser.add_argument(
         "--out",
@@ -135,7 +139,7 @@ def _handle_introspect(args: argparse.Namespace) -> None:
         if use_json:
             print(json.dumps({"status": "error", "message": str(e)}))
         else:
-            error(str(e))
+            error("Introspection failed. Use --json for detailed error output.")
         sys.exit(1)
 
 
