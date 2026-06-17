@@ -10,7 +10,7 @@ readme = "README.md"
 license = {text = "MIT"}
 requires-python = ">=3.9"
 authors = [
-  {name = "OKC Contributors"}
+  {name = "Auran0s"}
 ]
 classifiers = [
   "Development Status :: 3 - Alpha",
@@ -35,8 +35,8 @@ dev = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/opencode-ai/okc"
-Source = "https://github.com/opencode-ai/okc"
+Homepage = "https://github.com/Auran0s/okc"
+Source = "https://github.com/Auran0s/okc"
 
 [project.scripts]
 okc = "okc.cli:main"
