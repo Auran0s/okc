@@ -4,11 +4,12 @@
 
 *Deterministic database introspection to structured markdown knowledge bundles*
 
-[![CI](https://img.shields.io/github/actions/workflow/status/Auran0s/okc/bump-version.yml?style=flat-square&label=CI)](https://github.com/Auran0s/okc/actions)
+[![CI](https://img.shields.io/github/actions/workflow/status/Auran0s/okc/release.yml?style=flat-square&label=CI)](https://github.com/Auran0s/okc/actions)
+[![PyPI](https://img.shields.io/pypi/v/okc?style=flat-square)](https://pypi.org/project/okc/)
 ![Python Version](https://img.shields.io/badge/python-%3E%3D3.9-3c873a?style=flat-square)
 [![License](https://img.shields.io/badge/License-MIT-yellow?style=flat-square)](LICENSE)
 
-[Features](#features) • [Installation](#installation) • [Quick Start](#quick-start) • [Usage](#usage) • [Development](#development)
+[Website](https://auran0s.github.io/okc/) • [Features](#features) • [Installation](#installation) • [Quick Start](#quick-start) • [Usage](#usage) • [Development](#development)
 
 </div>
 
@@ -28,7 +29,13 @@
 
 ## Installation
 
-Install from source:
+Install from PyPI:
+
+```bash
+pip install okc
+```
+
+Or install from source:
 
 ```bash
 git clone https://github.com/Auran0s/okc
@@ -228,7 +235,9 @@ okc
 
 ## Resources
 
-- [OKF Specification](https://github.com/GoogleCloudPlatform/knowledge-catalog/tree/main/okf)
+- [Website](https://auran0s.github.io/okc/) — landing page, examples, and documentation
+- [PyPI](https://pypi.org/project/okc/) — package releases
+- [OKF Specification](https://github.com/GoogleCloudPlatform/knowledge-catalog/tree/main/okf) — Open Knowledge Format reference
 
 ---
 
