@@ -4,6 +4,12 @@
 
 *Deterministic database introspection to structured markdown knowledge bundles*
 
+[![CI](https://img.shields.io/github/actions/workflow/status/Auran0s/okc/bump-version.yml?style=flat-square&label=CI)](https://github.com/Auran0s/okc/actions)
+![Python Version](https://img.shields.io/badge/python-%3E%3D3.9-3c873a?style=flat-square)
+[![License](https://img.shields.io/badge/License-MIT-yellow?style=flat-square)](LICENSE)
+
+[Features](#features) • [Installation](#installation) • [Quick Start](#quick-start) • [Usage](#usage) • [Development](#development)
+
 </div>
 
 **okc** reads a database schema and produces an **OKF (Open Knowledge Format)** bundle — a directory of cross-linked markdown documents that turn your schema into a navigable knowledge graph.
@@ -66,7 +72,7 @@ Each `.md` document contains YAML frontmatter and human-readable sections for th
 ### CLI Reference
 
 ```
-okc introspect <url> [--out <dir>]
+okc introspect <url> [--out <dir>] [--quiet] [--json]
 okc --version
 ```
 
@@ -74,6 +80,8 @@ okc --version
 |---|---|---|---|
 | `url` | Yes | — | Database URL (see [Supported Backends](#supported-backends)) |
 | `--out` | No | `./okf-bundle` | Output directory for the generated bundle |
+| `--quiet` | No | `false` | Suppress stdout output (stderr still flows) |
+| `--json` | No | `false` | Output structured JSON instead of styled terminal output |
 | `--version` | No | — | Print the version and exit |
 
 ### Examples
@@ -88,9 +96,18 @@ okc introspect sqlite:///path/to/database.db --out ./docs/database
 # Introspect a PostgreSQL database
 okc introspect postgresql://user:password@localhost:5432/mydb --out ./pg-bundle
 
+# Silent introspection (stdout suppressed, errors still on stderr)
+okc introspect --quiet sqlite:///path/to/database.db
+
+# JSON output (useful for CI/CD and scripting)
+okc introspect --json sqlite:///path/to/database.db
+
 # Show version
 okc --version
 ```
+
+> [!TIP]
+> You can also run `python -m okc introspect ...` as an alternative to `okc introspect ...`.
 
 ## Supported Backends
 
@@ -105,6 +122,9 @@ okc --version
 ## OKF Bundle Format
 
 Each concept document captures one database object (table, view, or materialized view). For PostgreSQL, schemas produce an additional nesting level.
+
+> [!NOTE]
+> Bundle generation validates all output paths against directory traversal attacks, ensuring concept IDs cannot escape the output directory.
 
 ### Document structure
 
@@ -179,6 +199,7 @@ The test suite includes self-contained tests using an in-memory SQLite database 
 
 | Test file | Coverage |
 |---|---|
+| `tests/test_cli.py` | CLI flag handling (`--quiet`, `--json`, unsupported schemes, error output) |
 | `tests/test_document.py` | OKFDocument serialization, parsing, and validation |
 | `tests/test_index.py` | Index regeneration for flat and nested directory trees |
 | `tests/test_sqlite_source.py` | SQL source introspection and end-to-end bundle generation |
@@ -190,7 +211,10 @@ The test suite includes self-contained tests using an in-memory SQLite database 
 
 ```
 okc
-├── cli.py            — argparse entry point, URL routing
+├── __init__.py       — Version string
+├── __main__.py       — python -m entry point
+├── cli.py            — argparse CLI, URL routing, output mode dispatch
+├── console.py        — Rich console helpers (success, error, warn, info, status spinner)
 ├── sources/
 │   ├── base.py       — Source ABC + dataclasses (ColumnInfo, Constraint, Index, ForeignKey, ...)
 │   ├── sqlite.py     — SQLiteSource (stdlib sqlite3)
